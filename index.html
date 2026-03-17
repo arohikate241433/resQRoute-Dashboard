@@ -108,6 +108,271 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#f5f7fa;color:
 .cmp-table td{padding:7px 8px;border-bottom:1px solid #f3f4f6;color:#111827;}
 .cmp-table tr:last-child td{border:none;}
 
+/* ── CONNECTION LOSS SYSTEM ── */
+@keyframes connLostShake{0%,100%{transform:translate(-50%,-50%)}10%,30%,50%,70%,90%{transform:translate(calc(-50% - 5px),-50%)}20%,40%,60%,80%{transform:translate(calc(-50% + 5px),-50%)}}
+@keyframes staticFlicker{0%,100%{opacity:1}45%{opacity:.7}46%{opacity:.4}47%{opacity:.8}90%{opacity:.6}91%{opacity:1}}
+@keyframes scanline{0%{top:-10%}100%{top:110%}}
+@keyframes blinkOrange{0%,100%{background:#f07000}50%{background:#ff9a1a}}
+@keyframes signalDrop{0%{width:100%}100%{width:0%}}
+@keyframes connPopIn{from{transform:translate(-50%,-50%) scale(.78) rotate(-1.5deg);opacity:0}to{transform:translate(-50%,-50%) scale(1) rotate(0deg);opacity:1}}
+@keyframes connPopOut{from{transform:translate(-50%,-50%) scale(1);opacity:1}to{transform:translate(-50%,-50%) scale(.85);opacity:0}}
+@keyframes routeReveal{from{max-height:0;opacity:0}to{max-height:200px;opacity:1}}
+@keyframes contactPing{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+
+#conn-overlay{
+  position:fixed;inset:0;background:#00000066;z-index:9998;
+  display:none;align-items:center;justify-content:center;
+  backdrop-filter:blur(4px);
+}
+#conn-overlay.show{display:flex;animation:overlayIn .2s ease;}
+#conn-overlay.hide{animation:overlayOut .28s ease forwards;}
+
+#conn-popup{
+  position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  background:#fff;border-radius:20px;
+  width:480px;max-width:94vw;
+  box-shadow:0 28px 80px #00000044,0 0 0 2px #f0720022;
+  overflow:hidden;z-index:9999;
+  display:none;
+}
+#conn-popup.show{display:block;animation:connPopIn .38s cubic-bezier(.22,1,.36,1);}
+#conn-popup.shake{animation:connLostShake .5s ease;}
+#conn-popup.hide{animation:connPopOut .26s ease forwards;}
+
+/* Static TV noise header */
+.cl-header{
+  background:#1a1a2e;
+  padding:20px 24px 16px;
+  position:relative;overflow:hidden;
+}
+.cl-scanline{
+  position:absolute;top:-10%;left:0;width:100%;height:8px;
+  background:linear-gradient(transparent,#ffffff12,transparent);
+  animation:scanline 1.8s linear infinite;
+  pointer-events:none;
+}
+.cl-noise{
+  position:absolute;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.06'/%3E%3C/svg%3E");
+  animation:staticFlicker 1.2s ease infinite;
+  pointer-events:none;
+}
+.cl-icon-wrap{display:flex;justify-content:center;margin-bottom:10px;}
+.cl-icon{
+  width:60px;height:60px;border-radius:50%;
+  background:#f0720018;border:2px solid #f0720055;
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;animation:contactPing 1.2s ease infinite;
+  position:relative;
+}
+.cl-icon::before{
+  content:'';position:absolute;inset:-8px;border-radius:50%;
+  border:2px solid #f0720033;animation:vehiclePulse 1.4s ease infinite;
+}
+.cl-title{text-align:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;color:#fff;margin-bottom:3px;}
+.cl-sub{text-align:center;font-size:10px;color:#f07000;letter-spacing:.8px;text-transform:uppercase;font-weight:600;}
+
+/* Signal bars */
+.cl-signal{display:flex;justify-content:center;gap:3px;align-items:flex-end;margin-top:10px;}
+.cl-bar{width:5px;border-radius:2px;background:#f07000;}
+.cl-bar.lost{background:#333;animation:none;}
+
+/* Body */
+.cl-body{padding:18px 22px 0;}
+
+/* Vehicle info strip */
+.cl-vehicle-strip{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 14px;background:#fff5ed;border:1.5px solid #f0720033;
+  border-radius:12px;margin-bottom:14px;
+}
+.cl-v-emoji{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:19px;border:2px solid;flex-shrink:0;}
+.cl-lost-badge{
+  display:flex;align-items:center;gap:4px;
+  font-size:9px;font-weight:700;color:#f07000;
+  background:#fff5ed;border:1px solid #f0720044;
+  border-radius:5px;padding:2px 7px;
+  animation:blinkOrange .9s ease infinite;
+}
+
+/* Signal lost timer */
+.cl-timer-row{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:11px;color:#6b7280;margin-bottom:12px;
+  padding:8px 12px;background:#f9fafb;border-radius:8px;border:1px solid #e2e6ee;
+}
+#cl-elapsed{font-weight:700;color:#f07000;font-family:'Space Grotesk',sans-serif;}
+
+/* Signal strength bar */
+.cl-sig-row{margin-bottom:14px;}
+.cl-sig-label{font-size:10px;font-weight:600;color:#9ca3af;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px;display:flex;justify-content:space-between;}
+.cl-sig-bar-bg{height:6px;background:#f0f2f6;border-radius:3px;overflow:hidden;}
+.cl-sig-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#e8173a,#f07000);border-radius:3px;animation:signalDrop 2s linear forwards;}
+
+/* Contact section */
+.cl-contact-section{margin-bottom:14px;}
+.cl-section-label{font-size:10px;font-weight:600;color:#9ca3af;letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px;}
+.cl-contact-card{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 13px;background:#f0f4ff;border:1px solid #c5cffe;
+  border-radius:11px;margin-bottom:6px;
+}
+.cl-contact-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;background:#fff;border:1.5px solid #c5cffe;flex-shrink:0;}
+.cl-contact-name{font-weight:700;font-size:12px;color:#111827;}
+.cl-contact-sub{font-size:10px;color:#6b7280;margin-top:1px;}
+.cl-contact-btns{display:flex;gap:5px;margin-left:auto;flex-shrink:0;}
+.cl-btn-call{background:#0ead7a;border:none;border-radius:7px;padding:5px 10px;color:#fff;font-weight:700;font-size:10px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:3px;transition:all .15s;}
+.cl-btn-call:hover{background:#0bc470;transform:scale(1.04);}
+.cl-btn-msg{background:#eef1ff;border:1px solid #c5cffe;border-radius:7px;padding:5px 10px;color:#3b5bdb;font-weight:700;font-size:10px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:3px;transition:all .15s;}
+.cl-btn-msg:hover{background:#e0e4ff;}
+
+/* Spare routes */
+.cl-routes-section{margin-bottom:8px;}
+.cl-route-card{
+  padding:9px 12px;background:#f9fafb;border:1px solid #e2e6ee;
+  border-radius:10px;margin-bottom:6px;cursor:pointer;transition:all .18s;
+  animation:routeReveal .3s ease;overflow:hidden;
+}
+.cl-route-card:hover{border-color:#3b5bdb;background:#eef1ff;}
+.cl-route-card.selected{border-color:#3b5bdb;background:#eef1ff;}
+.cl-route-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.cl-route-name{font-weight:700;font-size:12px;color:#111827;}
+.cl-route-rel{font-size:9px;font-weight:700;border-radius:4px;padding:2px 7px;}
+.cl-route-meta{display:flex;gap:10px;font-size:10px;color:#6b7280;margin-bottom:5px;}
+.cl-route-turn{font-size:10px;color:#6b7280;line-height:1.5;padding:5px 8px;background:#f0f2f6;border-radius:6px;}
+.cl-rel-bar{height:3px;background:#e5e7eb;border-radius:2px;margin-top:5px;}
+.cl-rel-fill{height:100%;border-radius:2px;}
+
+/* Action buttons */
+.cl-actions{display:flex;gap:8px;padding:0 22px 20px;}
+.cl-btn-primary{flex:1;background:#f07000;border:none;border-radius:10px;padding:11px;color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.cl-btn-primary:hover{background:#d96400;transform:scale(1.02);}
+.cl-btn-secondary{background:#f5f7fa;border:1px solid #e2e6ee;border-radius:10px;padding:11px 14px;color:#6b7280;font-weight:600;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s;}
+.cl-btn-secondary:hover{background:#eee;}
+
+/* Connection status badge on vehicle card */
+.conn-lost-badge{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:9px;font-weight:700;color:#f07000;
+  background:#fff5ed;border:1px solid #f0720044;border-radius:4px;
+  padding:1px 6px;margin-top:4px;animation:blinkOrange 1s ease infinite;
+}
+/* ── EMPTY AMBULANCE MISUSE MONITOR ── */
+@keyframes warningFlash{0%,100%{background:linear-gradient(135deg,#7c1a1a,#4a1010)}50%{background:linear-gradient(135deg,#9b2020,#5c1515)}}
+@keyframes scoreCount{from{transform:scale(1.3)}to{transform:scale(1)}}
+@keyframes violationSlide{from{transform:translateX(-20px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes scorePulse{0%,100%{box-shadow:0 0 0 0 #e8173a33}50%{box-shadow:0 0 0 10px #e8173a00}}
+@keyframes badgePop{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
+@keyframes sweepIn{from{transform:translate(-50%,-50%) translateY(40px) scale(.94);opacity:0}to{transform:translate(-50%,-50%) translateY(0) scale(1);opacity:1}}
+
+#misuse-overlay{
+  position:fixed;inset:0;background:#00000077;z-index:9997;
+  display:none;align-items:center;justify-content:center;
+  backdrop-filter:blur(5px);
+}
+#misuse-overlay.show{display:flex;animation:overlayIn .2s ease;}
+#misuse-overlay.hide{animation:overlayOut .28s ease forwards;}
+
+#misuse-popup{
+  position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  background:#fff;border-radius:22px;
+  width:540px;max-width:95vw;max-height:92vh;
+  box-shadow:0 28px 80px #00000044,0 0 0 2px #e8173a22;
+  overflow:hidden;display:none;flex-direction:column;
+  z-index:9998;
+}
+#misuse-popup.show{display:flex;animation:sweepIn .38s cubic-bezier(.22,1,.36,1);}
+#misuse-popup.hide{animation:connPopOut .26s ease forwards;}
+
+/* Header */
+.mp-header{
+  background:linear-gradient(135deg,#7c1a1a,#3b0d0d);
+  padding:18px 24px 14px;flex-shrink:0;
+  position:relative;overflow:hidden;
+  animation:warningFlash 1.8s ease infinite;
+}
+.mp-header-top{display:flex;align-items:flex-start;gap:14px;margin-bottom:10px;}
+.mp-icon-circle{
+  width:52px;height:52px;border-radius:50%;
+  background:#ffffff18;border:2px solid #ffffff33;
+  display:flex;align-items:center;justify-content:center;
+  font-size:26px;flex-shrink:0;
+  animation:scorePulse 1.2s ease infinite;
+}
+.mp-header-text{flex:1;}
+.mp-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;color:#fff;margin-bottom:2px;}
+.mp-sub{font-size:10px;color:#ffaaaa;font-weight:600;letter-spacing:.7px;text-transform:uppercase;}
+.mp-vehicle-badge{display:flex;align-items:center;gap:6px;background:#ffffff18;border:1px solid #ffffff28;border-radius:10px;padding:6px 10px;margin-top:8px;width:fit-content;}
+.mp-vehicle-badge span{font-size:11px;color:#fff;font-weight:600;}
+
+/* Score ring */
+.mp-score-row{display:flex;align-items:center;gap:16px;padding:14px 24px;background:#fff9f9;border-bottom:1px solid #fee2e2;flex-shrink:0;}
+.mp-score-ring{position:relative;width:70px;height:70px;flex-shrink:0;}
+.mp-score-ring svg{transform:rotate(-90deg);}
+.mp-score-ring circle{fill:none;stroke-linecap:round;}
+.mp-score-val{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;text-align:center;line-height:1;}
+.mp-score-label{font-size:9px;color:#9ca3af;margin-top:1px;display:block;}
+.mp-score-info{flex:1;}
+.mp-score-title{font-weight:700;font-size:13px;color:#111827;margin-bottom:3px;}
+.mp-score-desc{font-size:11px;color:#6b7280;line-height:1.5;}
+.mp-score-badges{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap;}
+.mp-badge{font-size:9px;font-weight:700;border-radius:5px;padding:3px 8px;border:1px solid;}
+
+/* Vehicle state toggle */
+.mp-state-bar{display:flex;align-items:center;gap:10px;padding:10px 24px;background:#f9fafb;border-bottom:1px solid #f3f4f6;flex-shrink:0;}
+.mp-state-label{font-size:10px;font-weight:600;color:#9ca3af;letter-spacing:.5px;text-transform:uppercase;flex-shrink:0;}
+.mp-state-toggle{display:flex;background:#e5e7eb;border-radius:8px;padding:2px;gap:2px;}
+.mp-state-btn{padding:5px 12px;border-radius:6px;border:none;font-size:10px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s;}
+.mp-state-btn.active-state{background:#fff;box-shadow:0 1px 4px #00000018;}
+.mp-state-empty{color:#e8173a;}
+.mp-state-loaded{color:#0ead7a;}
+
+/* Violations list */
+.mp-violations{flex:1;overflow-y:auto;padding:14px 24px;}
+.mp-section-title{font-size:10px;font-weight:600;color:#9ca3af;letter-spacing:.7px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+.mp-viol-card{
+  display:flex;align-items:flex-start;gap:11px;
+  padding:11px 13px;background:#f9fafb;
+  border:1px solid #e2e6ee;border-left:3px solid;
+  border-radius:11px;margin-bottom:8px;
+  animation:violationSlide .25s ease;
+  transition:background .18s;
+}
+.mp-viol-card:hover{background:#f5f5ff;}
+.mp-viol-card.acked{opacity:.55;background:#f5f5f5;}
+.mp-viol-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.mp-viol-body{flex:1;min-width:0;}
+.mp-viol-type{font-weight:700;font-size:12px;margin-bottom:2px;display:flex;align-items:center;gap:6px;}
+.mp-viol-desc{font-size:11px;color:#6b7280;line-height:1.5;margin-bottom:4px;}
+.mp-viol-meta{display:flex;gap:8px;font-size:10px;color:#9ca3af;flex-wrap:wrap;}
+.mp-viol-actions{display:flex;flex-direction:column;gap:4px;flex-shrink:0;}
+.mp-btn-warn{background:#fff8f0;border:1px solid #f07000;color:#f07000;border-radius:6px;padding:4px 9px;font-size:9px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;transition:all .15s;}
+.mp-btn-warn:hover{background:#f07000;color:#fff;}
+.mp-btn-ack{background:#f5f7fa;border:1px solid #e2e6ee;color:#6b7280;border-radius:6px;padding:4px 9px;font-size:9px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;transition:all .15s;}
+.mp-btn-ack:hover{background:#e8eaf0;}
+.acked-tag{font-size:9px;color:#0ead7a;font-weight:700;background:#f0fdf8;border:1px solid #a7f3d0;border-radius:4px;padding:2px 6px;}
+
+/* Action bar */
+.mp-actions{
+  display:flex;gap:8px;padding:14px 24px;
+  border-top:1px solid #f3f4f6;background:#f9fafb;flex-shrink:0;
+}
+.mp-btn-suspend{flex:1;background:#e8173a;border:none;border-radius:10px;padding:11px;color:#fff;font-weight:700;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.mp-btn-suspend:hover{background:#c41230;transform:scale(1.02);}
+.mp-btn-warn-all{flex:1;background:#fff8f0;border:1.5px solid #f07000;border-radius:10px;padding:11px;color:#f07000;font-weight:700;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .18s;}
+.mp-btn-warn-all:hover{background:#f07000;color:#fff;}
+.mp-btn-close{background:#f5f7fa;border:1px solid #e2e6ee;border-radius:10px;padding:11px 14px;color:#6b7280;font-weight:600;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
+.mp-btn-close:hover{background:#eee;}
+
+/* Misuse badge on vehicle card */
+.misuse-badge{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:9px;font-weight:700;color:#e8173a;
+  background:#fff0f2;border:1px solid #e8173a44;border-radius:4px;
+  padding:1px 6px;margin-left:4px;animation:badgePop .3s ease;
+}
 /* ── DISPATCH NOTIFICATION POPUP ── */
 @keyframes overlayIn{from{opacity:0}to{opacity:1}}
 @keyframes overlayOut{from{opacity:1}to{opacity:0}}
@@ -324,6 +589,141 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:#f5f7fa;color:
 </div>
 </div>
 
+<!-- ── EMPTY AMBULANCE MISUSE MONITOR OVERLAY ── -->
+<div id="misuse-overlay" onclick="handleMisuseOverlayClick(event)">
+  <div id="misuse-popup">
+
+    <!-- Header -->
+    <div class="mp-header">
+      <div class="mp-header-top">
+        <div class="mp-icon-circle">⚠️</div>
+        <div class="mp-header-text">
+          <div class="mp-title">VEHICLE MISUSE DETECTED</div>
+          <div class="mp-sub" id="mp-sub-text">Empty ambulance · Unauthorized activity</div>
+        </div>
+      </div>
+      <div class="mp-vehicle-badge" id="mp-vehicle-badge"></div>
+    </div>
+
+    <!-- Driving score -->
+    <div class="mp-score-row">
+      <div class="mp-score-ring">
+        <svg width="70" height="70" viewBox="0 0 70 70">
+          <circle cx="35" cy="35" r="28" stroke="#f3f4f6" stroke-width="7"/>
+          <circle id="mp-score-arc" cx="35" cy="35" r="28" stroke="#e8173a" stroke-width="7" stroke-dasharray="176" stroke-dashoffset="176"/>
+        </svg>
+        <div class="mp-score-val">
+          <span id="mp-score-num" style="color:#e8173a;">0</span>
+          <span class="mp-score-label">score</span>
+        </div>
+      </div>
+      <div class="mp-score-info">
+        <div class="mp-score-title" id="mp-score-title">Driving Behaviour Score</div>
+        <div class="mp-score-desc" id="mp-score-desc">Score calculated from speed, braking, siren usage and compliance data.</div>
+        <div class="mp-score-badges" id="mp-score-badges"></div>
+      </div>
+    </div>
+
+    <!-- Vehicle load state toggle -->
+    <div class="mp-state-bar">
+      <span class="mp-state-label">Vehicle status:</span>
+      <div class="mp-state-toggle" id="mp-state-toggle"></div>
+      <span id="mp-state-info" style="font-size:10px;color:#9ca3af;margin-left:4px;"></span>
+    </div>
+
+    <!-- Violations -->
+    <div class="mp-violations">
+      <div class="mp-section-title">
+        <span>Detected Violations</span>
+        <span id="mp-viol-count" style="font-size:10px;color:#e8173a;font-weight:700;"></span>
+      </div>
+      <div id="mp-violations-list"></div>
+    </div>
+
+    <!-- Actions -->
+    <div class="mp-actions">
+      <button class="mp-btn-suspend" onclick="suspendVehicle()">🚫 Suspend Vehicle</button>
+      <button class="mp-btn-warn-all" onclick="warnDriver()">⚠️ Warn Driver</button>
+      <button class="mp-btn-close" onclick="closeMisusePopup()">Close</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── CONNECTION LOST OVERLAY ── -->
+<div id="conn-overlay" onclick="handleConnOverlayClick(event)">
+  <div id="conn-popup">
+
+    <!-- Static/noise header -->
+    <div class="cl-header">
+      <div class="cl-noise"></div>
+      <div class="cl-scanline"></div>
+
+      <div class="cl-icon-wrap">
+        <div class="cl-icon">📡</div>
+      </div>
+      <div class="cl-title">CONNECTION LOST</div>
+      <div class="cl-sub" id="cl-vehicle-sub">AMB-01 — Signal dropped</div>
+
+      <!-- Dying signal bars -->
+      <div class="cl-signal">
+        <div class="cl-bar lost" style="height:8px;"></div>
+        <div class="cl-bar lost" style="height:12px;"></div>
+        <div class="cl-bar lost" style="height:17px;"></div>
+        <div class="cl-bar lost" style="height:22px;"></div>
+        <div class="cl-bar lost" style="height:27px;"></div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="cl-body">
+
+      <!-- Vehicle strip -->
+      <div class="cl-vehicle-strip" id="cl-vehicle-strip"></div>
+
+      <!-- Elapsed + signal strength -->
+      <div class="cl-timer-row">
+        <span>📡 Signal lost for</span>
+        <span id="cl-elapsed">0s</span>
+        <span style="color:#9ca3af;">· Last GPS:</span>
+        <span id="cl-last-gps" style="font-size:10px;color:#6b7280;">22.7196, 75.8577</span>
+      </div>
+
+      <div class="cl-sig-row">
+        <div class="cl-sig-label">
+          <span>Signal strength</span>
+          <span id="cl-sig-pct" style="color:#e8173a;font-weight:700;">Disconnected</span>
+        </div>
+        <div class="cl-sig-bar-bg">
+          <div class="cl-sig-bar-fill" id="cl-sig-fill"></div>
+        </div>
+      </div>
+
+      <!-- Contact section -->
+      <div class="cl-contact-section">
+        <div class="cl-section-label">📞 Contact Driver & Dispatch</div>
+        <div id="cl-contacts"></div>
+      </div>
+
+      <!-- Spare routes -->
+      <div class="cl-routes-section">
+        <div class="cl-section-label">🗺️ Spare Routes — Share with Driver</div>
+        <div id="cl-routes"></div>
+      </div>
+
+    </div>
+
+    <!-- Actions -->
+    <div class="cl-actions">
+      <button class="cl-btn-primary" id="cl-share-btn" onclick="shareSpareRoute()">
+        📤 Share Selected Route to Driver
+      </button>
+      <button class="cl-btn-secondary" onclick="closeConnPopup()">Close</button>
+    </div>
+
+  </div>
+</div>
+
 <!-- ── DISPATCH NOTIFICATION OVERLAY ── -->
 <div id="dispatch-overlay" onclick="handleOverlayClick(event)">
   <div id="dispatch-popup">
@@ -423,6 +823,80 @@ const ROUTE_PATHS = {
   'AMB-01':  [[22.7196,75.8577],[22.7210,75.8620],[22.7240,75.8660],[22.7280,75.8700],[22.7310,75.8750],[22.7350,75.8820]],
   'FIRE-01': [[22.7230,75.8500],[22.7200,75.8540],[22.7160,75.8570],[22.7110,75.8610],[22.7050,75.8650]],
   'POL-01':  [[22.7100,75.8600],[22.7120,75.8640],[22.7140,75.8680],[22.7160,75.8720],[22.7180,75.8750]],
+};
+
+// Spare routes for each vehicle (used when connection drops)
+const SPARE_ROUTES = {
+  'AMB-01': [
+    { id:'SR-A1', name:'Via Ring Road N', eta:'6 min', dist:'4.1 km', rel:89, cong:'low',    turn:'Left on AB Road → Right on Ring Road North → Straight to Sector 12' },
+    { id:'SR-A2', name:'Via Bypass Lane', eta:'8 min', dist:'5.3 km', rel:94, cong:'low',    turn:'Right on Vijay Nagar → Bypass NH3 → Left at Sector 12 Junction' },
+    { id:'SR-A3', name:'Via Old City Rd', eta:'7 min', dist:'4.8 km', rel:76, cong:'medium', turn:'Straight on MG Road → Old City Bridge → Right at Police Circle' },
+  ],
+  'FIRE-01': [
+    { id:'SR-F1', name:'Via Race Course', eta:'9 min', dist:'5.6 km', rel:91, cong:'low',    turn:'Left on Race Course Rd → Industrial Zone Bypass → Right gate B' },
+    { id:'SR-F2', name:'Via NH3 South',   eta:'11 min',dist:'7.2 km', rel:97, cong:'low',    turn:'NH3 bypass south → Industrial entrance from rear access road' },
+  ],
+  'POL-01': [
+    { id:'SR-P1', name:'Via Palasia Sq',  eta:'4 min', dist:'2.8 km', rel:88, cong:'low',    turn:'Left Palasia Chowk → MG Road East → Right at Incident marker' },
+    { id:'SR-P2', name:'Via Rajwada',     eta:'5 min', dist:'3.4 km', rel:82, cong:'medium', turn:'Rajwada Circle → Mahatma Gandhi St → MG Road junction' },
+  ],
+};
+
+// Connection state per vehicle (true = connected)
+const connState = { 'AMB-01': true, 'AMB-02': true, 'FIRE-01': true, 'POL-01': true };
+const connLostTime = {}; // timestamp when lost
+
+// ── EMPTY AMBULANCE MISUSE MONITORING ────────────────────────────────
+// vehicle is "empty" when status is Standby or Returning
+const vehicleLoad = {
+  'AMB-01':  'loaded',   // has patient on board
+  'AMB-02':  'empty',    // returning / standby
+  'FIRE-01': 'loaded',
+  'POL-01':  'loaded',
+};
+
+// Violation log per vehicle  { type, time, severity, speed, location, acknowledged }
+const violationLog = {
+  'AMB-01': [], 'AMB-02': [], 'FIRE-01': [], 'POL-01': []
+};
+
+// Driving behaviour score per vehicle (100 = perfect, drops on violations)
+const drivingScore = {
+  'AMB-01': 94, 'AMB-02': 61, 'FIRE-01': 88, 'POL-01': 78
+};
+
+// Siren state per vehicle (true = siren ON)
+const sirenState = {
+  'AMB-01': true, 'AMB-02': false, 'FIRE-01': true, 'POL-01': true
+};
+
+// Speed limits: empty return vs active emergency
+const SPEED_LIMIT_EMPTY    = 60;   // km/h max when empty
+const SPEED_LIMIT_ACTIVE   = 100;  // km/h max with patient / on mission
+const SIREN_THRESHOLD_EMPTY = true; // siren ON for empty = illegal
+
+// Predefined violations for AMB-02 (empty ambulance) to demo
+const DEMO_VIOLATIONS = [
+  { type:'overspeed',      severity:'high',     speed:87,  location:'MG Road near Sector 5',       desc:'Speed 87 km/h — limit 60 km/h for empty vehicle (27 km/h over)' },
+  { type:'illegal_siren',  severity:'critical',  speed:54,  location:'Palasia Chowk',               desc:'Siren activated without active mission — illegal use detected' },
+  { type:'harsh_braking',  severity:'medium',   speed:0,   location:'Race Course Square Junction',  desc:'Sudden braking detected — 0.72g deceleration (threshold: 0.5g)' },
+  { type:'overspeed',      severity:'critical',  speed:103, location:'Ring Road near AB Road',       desc:'Speed 103 km/h — critical overspeed, empty vehicle, residential zone' },
+  { type:'sharp_turn',     severity:'medium',   speed:44,  location:'Vijay Nagar Flyover',          desc:'Sharp turn at 44 km/h — lateral force 0.68g exceeds safe threshold' },
+];
+
+const violationIcons = {
+  overspeed:     '⚡',
+  illegal_siren: '🔊',
+  harsh_braking: '🛑',
+  sharp_turn:    '↩️',
+  idle_engine:   '🔋',
+};
+
+const violationColors = {
+  critical: '#e8173a',
+  high:     '#f07000',
+  medium:   '#e09000',
+  low:      '#3b5bdb',
 };
 
 // ── STATE ─────────────────────────────────────────────────────────────
@@ -860,17 +1334,35 @@ function renderVList() {
         </div>
       </div>
       ${v.status !== 'Standby' ? `
-      <div style="margin-top:7px;font-size:10px;color:#6b7280;display:flex;gap:9px;flex-wrap:wrap;">
+      <div style="margin-top:7px;font-size:10px;color:#6b7280;display:flex;gap:9px;flex-wrap:wrap;align-items:center;">
         <span>⚡ ${liveSpeed[i]} km/h</span>
         ${v.eta !== '—' ? `<span style="color:#3b5bdb;font-weight:600;">⏱ ${v.eta}</span>` : ''}
+        ${!connState[v.id] ? `<span class="conn-lost-badge">📡 NO SIGNAL</span>` : ''}
+        ${vehicleLoad[v.id]==='empty' ? `<span style="font-size:9px;font-weight:700;color:#f07000;background:#fff8f0;border:1px solid #f0700044;border-radius:4px;padding:1px 6px;">EMPTY</span>` : ''}
+        ${violationLog[v.id] && violationLog[v.id].filter(vl=>!vl.acknowledged).length > 0 ? `<span class="misuse-badge">⚠️ ${violationLog[v.id].filter(vl=>!vl.acknowledged).length} violation${violationLog[v.id].filter(vl=>!vl.acknowledged).length>1?'s':''}</span>` : ''}
       </div>
       <div style="margin-top:5px;font-size:10px;color:#9ca3af;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📍 ${v.from} → ${v.to}</div>
       <div style="margin-top:6px;height:3px;background:#e5e7eb;border-radius:2px;">
-        <div style="height:100%;width:${40+i*13}%;background:${PC[v.priority]};border-radius:2px;transition:width 1s;"></div>
+        <div style="height:100%;width:${drivingScore[v.id]}%;background:${drivingScore[v.id]>=80?PC[v.priority]:drivingScore[v.id]>=60?'#e09000':'#e8173a'};border-radius:2px;transition:width 1s;"></div>
       </div>
-      <button onclick="dispatchVehicle(${i},event)" style="margin-top:8px;width:100%;background:${PC[v.priority]};border:none;border-radius:7px;padding:6px;color:#fff;font-weight:700;font-size:10px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:5px;transition:opacity .18s;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
-        🚨 Dispatch &amp; Notify
-      </button>` : ''}
+      <div style="font-size:9px;color:#9ca3af;margin-top:2px;display:flex;justify-content:space-between;">
+        <span>Driving score</span>
+        <span style="font-weight:700;color:${drivingScore[v.id]>=80?'#0ead7a':drivingScore[v.id]>=60?'#e09000':'#e8173a'};">${drivingScore[v.id]}/100</span>
+      </div>
+      <div style="display:flex;gap:5px;margin-top:7px;">
+        <button onclick="dispatchVehicle(${i},event)" style="flex:1;background:${PC[v.priority]};border:none;border-radius:7px;padding:6px;color:#fff;font-weight:700;font-size:10px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity .18s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+          🚨 Dispatch
+        </button>
+        <button onclick="simulateMisuse(${i});event.stopPropagation();" style="background:#fff0f2;border:1px solid #e8173a66;border-radius:7px;padding:6px 7px;color:#e8173a;font-weight:700;font-size:10px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;" title="Simulate misuse detection">⚠️ Sim</button>
+        ${connState[v.id]
+          ? `<button onclick="triggerConnectionLost(${i});event.stopPropagation();" style="background:#fff5ed;border:1px solid #f0720066;border-radius:7px;padding:6px 7px;color:#f07000;font-weight:700;font-size:10px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;" title="Simulate connection loss">📡</button>`
+          : `<button onclick="restoreConnection(${i});event.stopPropagation();" style="background:#f0fdf8;border:1px solid #a7f3d0;border-radius:7px;padding:6px 7px;color:#0ead7a;font-weight:700;font-size:10px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;" title="Restore connection">✅</button>`
+        }
+      </div>` : `
+      <div style="margin-top:6px;font-size:10px;color:#9ca3af;">Standing by at ${v.from}</div>
+      <div style="display:flex;gap:5px;margin-top:7px;">
+        <button onclick="simulateMisuse(${i});event.stopPropagation();" style="flex:1;background:#fff0f2;border:1px solid #e8173a66;border-radius:7px;padding:6px;color:#e8173a;font-weight:700;font-size:10px;cursor:pointer;font-family:'DM Sans',sans-serif;" title="Simulate misuse on standby vehicle">⚠️ Simulate Misuse Detection</button>
+      </div>`}
     </div>`;
   }).join('');
 }
@@ -1036,6 +1528,541 @@ function renderAll() {
 }
 
 function tick() { document.getElementById('clock').textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+
+// ── EMPTY AMBULANCE MISUSE MONITORING SYSTEM ─────────────────────────
+let misuseVehicleIdx = null;
+let misuseSimInterval = null;
+
+function playMisuseAlert() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    let t = ctx.currentTime + 0.04;
+    // Sharp, urgent double-beep pattern
+    [[1200,0.08],[1200,0.08],[900,0.14]].forEach(([freq,dur],i) => {
+      const osc = ctx.createOscillator();
+      const g   = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.20, t + 0.01);
+      g.gain.linearRampToValueAtTime(0.20, t + dur - 0.01);
+      g.gain.linearRampToValueAtTime(0, t + dur);
+      osc.connect(g); g.connect(ctx.destination);
+      osc.start(t); osc.stop(t + dur + 0.01);
+      t += dur + 0.06;
+    });
+    // Low urgency tone
+    setTimeout(() => {
+      try {
+        const ctx2 = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx2.createOscillator();
+        const g   = ctx2.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(440, ctx2.currentTime + 0.05);
+        osc.frequency.linearRampToValueAtTime(280, ctx2.currentTime + 0.4);
+        g.gain.setValueAtTime(0.18, ctx2.currentTime + 0.05);
+        g.gain.linearRampToValueAtTime(0, ctx2.currentTime + 0.42);
+        osc.connect(g); g.connect(ctx2.destination);
+        osc.start(ctx2.currentTime + 0.05);
+        osc.stop(ctx2.currentTime + 0.45);
+      } catch(e) {}
+    }, 400);
+  } catch(e) {}
+}
+
+function openMisuseMonitor(vehicleIdx) {
+  misuseVehicleIdx = vehicleIdx;
+  const v    = VEHICLES[vehicleIdx];
+  const viols = violationLog[v.id];
+  const score = drivingScore[v.id];
+  const load  = vehicleLoad[v.id];
+
+  // Play alert sound
+  playMisuseAlert();
+
+  // Sub-text
+  document.getElementById('mp-sub-text').textContent =
+    `${v.id} — ${load === 'empty' ? 'Empty vehicle — unauthorized activity' : 'Active vehicle — behaviour violation'}`;
+
+  // Vehicle badge
+  document.getElementById('mp-vehicle-badge').innerHTML = `
+    <span style="font-size:16px;">${v.emoji}</span>
+    <span>${v.id} · ${v.driver} · ${v.type}</span>
+    <span style="font-size:10px;color:#ffaaaa;margin-left:4px;">${v.phone}</span>
+  `;
+
+  // Score ring animation
+  const scoreArc = document.getElementById('mp-score-arc');
+  const circumference = 176;
+  const offset = circumference - (score / 100) * circumference;
+  const scoreColor = score >= 80 ? '#0ead7a' : score >= 60 ? '#e09000' : '#e8173a';
+  scoreArc.style.strokeDashoffset = circumference; // reset
+  scoreArc.style.stroke = scoreColor;
+  setTimeout(() => {
+    scoreArc.style.transition = 'stroke-dashoffset 1.2s cubic-bezier(.22,1,.36,1)';
+    scoreArc.style.strokeDashoffset = offset;
+  }, 200);
+
+  const scoreNum = document.getElementById('mp-score-num');
+  scoreNum.style.color = scoreColor;
+  // Count up animation
+  let n = 0;
+  const tgt = score;
+  const step = setInterval(() => {
+    n = Math.min(n + 3, tgt);
+    scoreNum.textContent = n;
+    if (n >= tgt) clearInterval(step);
+  }, 25);
+
+  // Score title / desc
+  document.getElementById('mp-score-title').textContent =
+    score >= 80 ? 'Good Driving Behaviour' : score >= 60 ? 'Moderate — Needs Attention' : 'Poor — Immediate Action Required';
+  document.getElementById('mp-score-desc').textContent =
+    `Based on ${viols.length} violation${viols.length!==1?'s':''} recorded. Speed compliance, siren usage, and braking patterns analysed.`;
+
+  // Score badges
+  const badgeDefs = [
+    { label: `${viols.filter(v=>v.type==='overspeed').length} Overspeed`, color: '#e8173a' },
+    { label: `${viols.filter(v=>v.type==='illegal_siren').length} Siren Abuse`, color: '#f07000' },
+    { label: `${viols.filter(v=>v.type==='harsh_braking'||v.type==='sharp_turn').length} Rash Driving`, color: '#e09000' },
+    { label: sirenState[v.id] && load === 'empty' ? '🔊 Siren ON' : '🔇 Siren OFF', color: sirenState[v.id] && load==='empty' ? '#e8173a' : '#0ead7a' },
+  ];
+  document.getElementById('mp-score-badges').innerHTML = badgeDefs.map(b =>
+    `<div class="mp-badge" style="background:${b.color}15;color:${b.color};border-color:${b.color}33;">${b.label}</div>`
+  ).join('');
+
+  // State toggle
+  document.getElementById('mp-state-toggle').innerHTML = `
+    <button class="mp-state-btn ${load==='empty'?'active-state mp-state-empty':''}"
+      onclick="setVehicleLoad(${vehicleIdx},'empty')" id="state-empty-btn">
+      Empty / Returning
+    </button>
+    <button class="mp-state-btn ${load==='loaded'?'active-state mp-state-loaded':''}"
+      onclick="setVehicleLoad(${vehicleIdx},'loaded')" id="state-loaded-btn">
+      Patient On Board
+    </button>
+  `;
+  document.getElementById('mp-state-info').textContent =
+    load === 'empty' ? '⚠️ Speed limit: 60 km/h · Siren: Not allowed' : '✅ Speed limit: 100 km/h · Siren: Allowed';
+
+  // Violations list
+  renderViolationsList(vehicleIdx);
+
+  document.getElementById('mp-viol-count').textContent = `${viols.length} violation${viols.length!==1?'s':''}`;
+
+  // Show popup
+  const overlay = document.getElementById('misuse-overlay');
+  const popup   = document.getElementById('misuse-popup');
+  overlay.classList.remove('hide');
+  popup.classList.remove('hide');
+  overlay.classList.add('show');
+  popup.classList.add('show');
+}
+
+function renderViolationsList(vehicleIdx) {
+  const v     = VEHICLES[vehicleIdx];
+  const viols = violationLog[v.id];
+  const el    = document.getElementById('mp-violations-list');
+
+  if (!viols.length) {
+    el.innerHTML = `<div style="text-align:center;padding:28px 0;color:#9ca3af;font-size:12px;">✅ No violations recorded for this vehicle</div>`;
+    return;
+  }
+
+  el.innerHTML = viols.map((viol, idx) => {
+    const c     = violationColors[viol.severity];
+    const icon  = violationIcons[viol.type] || '⚠️';
+    const label = viol.type.replace(/_/g,' ').replace(/\b\w/g, l => l.toUpperCase());
+    return `
+    <div class="mp-viol-card${viol.acknowledged?' acked':''}" id="viol-card-${idx}" style="border-left-color:${c}">
+      <div class="mp-viol-icon" style="background:${c}15;">${icon}</div>
+      <div class="mp-viol-body">
+        <div class="mp-viol-type" style="color:${c};">
+          ${label}
+          <span style="font-size:9px;font-weight:700;background:${c}15;color:${c};border:1px solid ${c}33;border-radius:4px;padding:1px 6px;text-transform:capitalize;">${viol.severity}</span>
+          ${viol.acknowledged ? '<span class="acked-tag">✓ Acknowledged</span>' : ''}
+        </div>
+        <div class="mp-viol-desc">${viol.desc}</div>
+        <div class="mp-viol-meta">
+          ${viol.speed > 0 ? `<span>⚡ ${viol.speed} km/h</span>` : ''}
+          <span>📍 ${viol.location}</span>
+          <span>🕐 ${viol.time}</span>
+        </div>
+      </div>
+      ${!viol.acknowledged ? `
+      <div class="mp-viol-actions">
+        <button class="mp-btn-warn" onclick="warnForViolation(${vehicleIdx},${idx})">⚠️ Warn</button>
+        <button class="mp-btn-ack"  onclick="ackViolation(${vehicleIdx},${idx})">✓ Ack</button>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function setVehicleLoad(vehicleIdx, state) {
+  const v = VEHICLES[vehicleIdx];
+  vehicleLoad[v.id] = state;
+  const c = state === 'empty' ? '#e8173a' : '#0ead7a';
+  document.querySelectorAll('.mp-state-btn').forEach(b => {
+    b.classList.remove('active-state','mp-state-empty','mp-state-loaded');
+  });
+  const activeBtn = document.getElementById(`state-${state}-btn`);
+  if (activeBtn) {
+    activeBtn.classList.add('active-state', state === 'empty' ? 'mp-state-empty' : 'mp-state-loaded');
+  }
+  document.getElementById('mp-state-info').textContent =
+    state === 'empty' ? '⚠️ Speed limit: 60 km/h · Siren: Not allowed' : '✅ Speed limit: 100 km/h · Siren: Allowed';
+  addAlert('info', `🚑 ${v.id} status set to "${state === 'empty' ? 'Empty / Returning' : 'Patient On Board'}" — monitoring thresholds updated`);
+}
+
+function ackViolation(vehicleIdx, violIdx) {
+  const v = VEHICLES[vehicleIdx];
+  violationLog[v.id][violIdx].acknowledged = true;
+  renderViolationsList(vehicleIdx);
+  addAlert('info', `✓ Violation #${violIdx+1} acknowledged for ${v.id} — ${v.driver}`);
+}
+
+function warnForViolation(vehicleIdx, violIdx) {
+  const v     = VEHICLES[vehicleIdx];
+  const viol  = violationLog[v.id][violIdx];
+  const label = viol.type.replace(/_/g,' ').replace(/\b\w/g, l => l.toUpperCase());
+  violationLog[v.id][violIdx].acknowledged = true;
+  renderViolationsList(vehicleIdx);
+  addAlert('warning', `⚠️ Warning issued to ${v.driver} (${v.id}) for ${label} at ${viol.location}`);
+}
+
+function warnDriver() {
+  if (misuseVehicleIdx === null) return;
+  const v = VEHICLES[misuseVehicleIdx];
+  const unacked = violationLog[v.id].filter(viol => !viol.acknowledged);
+  unacked.forEach((_,idx) => { violationLog[v.id][idx].acknowledged = true; });
+  addAlert('warning', `⚠️ Formal warning sent to ${v.driver} (${v.id}) — ${unacked.length} violation${unacked.length!==1?'s':''} flagged. Driver notified via app + SMS.`);
+  // Deduct score
+  drivingScore[v.id] = Math.max(0, drivingScore[v.id] - 5);
+  renderViolationsList(misuseVehicleIdx);
+  closeMisusePopup();
+}
+
+function suspendVehicle() {
+  if (misuseVehicleIdx === null) return;
+  const v = VEHICLES[misuseVehicleIdx];
+  addAlert('critical', `🚫 VEHICLE SUSPENDED — ${v.id} (${v.driver}) has been suspended from duty pending review. Fleet manager notified.`);
+  drivingScore[v.id] = Math.max(0, drivingScore[v.id] - 15);
+  VEHICLES[misuseVehicleIdx].status = 'Suspended';
+  renderAll();
+  closeMisusePopup();
+}
+
+function closeMisusePopup() {
+  const overlay = document.getElementById('misuse-overlay');
+  const popup   = document.getElementById('misuse-popup');
+  overlay.classList.add('hide');
+  popup.classList.add('hide');
+  setTimeout(() => {
+    overlay.classList.remove('show','hide');
+    popup.classList.remove('show','hide');
+  }, 300);
+}
+
+function handleMisuseOverlayClick(e) {
+  if (e.target === document.getElementById('misuse-overlay')) closeMisusePopup();
+}
+
+// Simulate violations arriving for a specific vehicle (for demo)
+function simulateMisuse(vehicleIdx) {
+  const v = VEHICLES[vehicleIdx];
+  const load = vehicleLoad[v.id];
+
+  // Add all demo violations to AMB-02 (the empty one)
+  violationLog[v.id] = DEMO_VIOLATIONS.map((d, i) => ({
+    ...d,
+    time: `${i+1} min ago`,
+    acknowledged: false,
+  }));
+
+  // Drop driving score dramatically for empty vehicle
+  drivingScore[v.id] = 61;
+
+  // Fire critical alert
+  addAlert('critical', `🚨 MISUSE ALERT — ${v.id} (${v.driver}): ${DEMO_VIOLATIONS.length} violations detected on empty vehicle! Illegal siren use + overspeeding.`);
+  addAlert('warning',  `⚡ ${v.id} reached 103 km/h — well above 60 km/h empty vehicle limit`);
+  addAlert('warning',  `🔊 ${v.id} activated siren with no active mission — Palasia Chowk`);
+
+  // Play alert
+  playMisuseAlert();
+  setTimeout(playMisuseAlert, 700);
+
+  // Open the monitor popup after a beat
+  setTimeout(() => openMisuseMonitor(vehicleIdx), 500);
+
+  renderVList();
+}
+
+// ── CONNECTION LOSS SYSTEM ────────────────────────────────────────────
+let connLostVehicleIdx = null;
+let connElapsedTimer   = null;
+let connElapsedSecs    = 0;
+let selectedSpareRoute = null;
+let connAlertBuzzerCtx = null;
+
+// Play a distinct "signal drop" alert — lower-pitched, warning tone
+function playConnLostAlert() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    let t = ctx.currentTime + 0.05;
+
+    // Three descending beeps — "losing signal" feel
+    [[880,0.12],[660,0.12],[440,0.18]].forEach(([freq, dur]) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.22, t);
+      gain.gain.linearRampToValueAtTime(0, t + dur - 0.02);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t); osc.stop(t + dur);
+      t += dur + 0.04;
+    });
+
+    // Final low warning hum
+    const hum  = ctx.createOscillator();
+    const hgain = ctx.createGain();
+    hum.type = 'triangle';
+    hum.frequency.setValueAtTime(220, t);
+    hum.frequency.linearRampToValueAtTime(180, t + 0.5);
+    hgain.gain.setValueAtTime(0.15, t);
+    hgain.gain.linearRampToValueAtTime(0, t + 0.5);
+    hum.connect(hgain); hgain.connect(ctx.destination);
+    hum.start(t); hum.stop(t + 0.52);
+  } catch(e) {}
+}
+
+function playRouteSharedSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    let t = ctx.currentTime + 0.05;
+    // Ascending success chime
+    [[523,0.10],[659,0.10],[784,0.10],[1047,0.22]].forEach(([freq, dur]) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.16, t);
+      gain.gain.linearRampToValueAtTime(0, t + dur - 0.01);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t); osc.stop(t + dur);
+      t += dur + 0.02;
+    });
+  } catch(e) {}
+}
+
+// Trigger connection lost for a specific vehicle
+function triggerConnectionLost(vehicleIdx) {
+  const v = VEHICLES[vehicleIdx];
+  connLostVehicleIdx  = vehicleIdx;
+  connState[v.id]     = false;
+  connLostTime[v.id]  = Date.now();
+  connElapsedSecs     = 0;
+  selectedSpareRoute  = null;
+
+  // Play warning alert
+  playConnLostAlert();
+
+  // Add to alerts panel
+  addAlert('critical', `📡 CONNECTION LOST — ${v.id} (${v.driver}) · Signal dropped · Last GPS recorded`);
+
+  // Fill popup content
+  document.getElementById('cl-vehicle-sub').textContent = `${v.id} — ${v.driver} · Signal dropped`;
+
+  // Vehicle strip
+  document.getElementById('cl-vehicle-strip').innerHTML = `
+    <div class="cl-v-emoji" style="background:${PC[v.priority]}12;border-color:${PC[v.priority]}44;">${v.emoji}</div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-weight:700;font-size:13px;color:#111827;">${v.id} — ${v.driver}</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:1px;">${v.type} · ${v.phone}</div>
+      <div style="font-size:10px;color:#6b7280;margin-top:1px;">Last known: ${v.from} → ${v.to}</div>
+    </div>
+    <div class="cl-lost-badge">📡 LOST</div>
+  `;
+
+  // Last GPS
+  document.getElementById('cl-last-gps').textContent =
+    `${v.latlng[0].toFixed(4)}, ${v.latlng[1].toFixed(4)}`;
+
+  // Reset signal bar animation
+  const fill = document.getElementById('cl-sig-fill');
+  fill.style.animation = 'none'; fill.offsetHeight;
+  fill.style.animation = 'signalDrop 2s linear forwards';
+  document.getElementById('cl-sig-pct').textContent = 'Disconnected';
+
+  // Contacts
+  document.getElementById('cl-contacts').innerHTML = `
+    <div class="cl-contact-card">
+      <div class="cl-contact-avatar">${v.emoji}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="cl-contact-name">${v.driver} (Driver)</div>
+        <div class="cl-contact-sub">${v.phone} · ${v.type}</div>
+      </div>
+      <div class="cl-contact-btns">
+        <button class="cl-btn-call" onclick="simulateCall('${v.driver}','${v.phone}')">📞 Call</button>
+        <button class="cl-btn-msg"  onclick="simulateSMS('${v.driver}')">💬 SMS</button>
+      </div>
+    </div>
+    <div class="cl-contact-card">
+      <div class="cl-contact-avatar">🏥</div>
+      <div style="flex:1;min-width:0;">
+        <div class="cl-contact-name">Dispatch Control Center</div>
+        <div class="cl-contact-sub">+91 99000 00001 · Central HQ</div>
+      </div>
+      <div class="cl-contact-btns">
+        <button class="cl-btn-call" onclick="simulateCall('Dispatch HQ','+91 99000 00001')">📞 Call</button>
+        <button class="cl-btn-msg"  onclick="simulateSMS('Dispatch HQ')">💬 SMS</button>
+      </div>
+    </div>
+    <div class="cl-contact-card">
+      <div class="cl-contact-avatar">🚑</div>
+      <div style="flex:1;min-width:0;">
+        <div class="cl-contact-name">Nearest Backup Unit (AMB-02)</div>
+        <div class="cl-contact-sub">+91 98001 22222 · Sunita Rao · 1.4 km away</div>
+      </div>
+      <div class="cl-contact-btns">
+        <button class="cl-btn-call" onclick="simulateCall('Sunita Rao','+91 98001 22222')">📞 Call</button>
+        <button class="cl-btn-msg"  onclick="simulateSMS('Sunita Rao')">💬 SMS</button>
+      </div>
+    </div>
+  `;
+
+  // Spare routes
+  const spares = SPARE_ROUTES[v.id] || [];
+  document.getElementById('cl-routes').innerHTML = spares.map((r, idx) => {
+    const relColor = r.rel > 90 ? '#0ead7a' : r.rel > 80 ? '#e09000' : '#f07000';
+    return `
+    <div class="cl-route-card${idx===0?' selected':''}" id="spare-${r.id}" onclick="selectSpareRoute('${r.id}')">
+      <div class="cl-route-top">
+        <div class="cl-route-name">${r.name}</div>
+        <div class="cl-route-rel" style="background:${relColor}18;color:${relColor};border:1px solid ${relColor}33;">${r.rel}% reliable</div>
+      </div>
+      <div class="cl-route-meta">
+        <span>⏱ ${r.eta}</span>
+        <span>📏 ${r.dist}</span>
+        <span style="color:${r.cong==='low'?'#0ead7a':'#e09000'};">● ${r.cong} congestion</span>
+      </div>
+      <div class="cl-route-turn">🧭 ${r.turn}</div>
+      <div class="cl-rel-bar"><div class="cl-rel-fill" style="width:${r.rel}%;background:${relColor};"></div></div>
+    </div>`;
+  }).join('');
+
+  // Pre-select first spare route
+  if (spares.length) selectedSpareRoute = spares[0].id;
+
+  // Show popup
+  const overlay = document.getElementById('conn-overlay');
+  const popup   = document.getElementById('conn-popup');
+  overlay.classList.remove('hide');
+  popup.classList.remove('hide');
+  overlay.classList.add('show');
+  popup.classList.add('show');
+
+  // Shake popup for attention
+  setTimeout(() => {
+    popup.classList.add('shake');
+    setTimeout(() => popup.classList.remove('shake'), 500);
+  }, 400);
+
+  // Start elapsed timer
+  clearInterval(connElapsedTimer);
+  connElapsedTimer = setInterval(() => {
+    connElapsedSecs++;
+    const el = document.getElementById('cl-elapsed');
+    if (el) el.textContent = connElapsedSecs < 60 ? `${connElapsedSecs}s` : `${Math.floor(connElapsedSecs/60)}m ${connElapsedSecs%60}s`;
+  }, 1000);
+
+  // Update vehicle card to show lost badge
+  renderVList();
+
+  // Add pulsing marker on map
+  if (mapMarkers[v.id]) {
+    const lostEl = `<div style="position:relative;width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
+      <div style="position:absolute;width:60px;height:60px;border-radius:50%;border:2.5px solid #f07000;animation:vehiclePulse 1s ease infinite;opacity:.7;"></div>
+      <div style="width:42px;height:42px;border-radius:50%;background:#f07000;border:3px solid #fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 2px 12px #f0700066;filter:grayscale(.6);">${v.emoji}</div>
+      <div style="position:absolute;top:-4px;right:-4px;width:16px;height:16px;border-radius:50%;background:#e8173a;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:9px;">!</div>
+    </div>`;
+    const icon = L.divIcon({html: lostEl, className:'', iconSize:[48,48], iconAnchor:[24,24]});
+    mapMarkers[v.id].setIcon(icon);
+  }
+}
+
+function selectSpareRoute(routeId) {
+  selectedSpareRoute = routeId;
+  document.querySelectorAll('.cl-route-card').forEach(card => card.classList.remove('selected'));
+  const el = document.getElementById(`spare-${routeId}`);
+  if (el) el.classList.add('selected');
+}
+
+function shareSpareRoute() {
+  if (!selectedSpareRoute || connLostVehicleIdx === null) return;
+  const v = VEHICLES[connLostVehicleIdx];
+  const allSpares = SPARE_ROUTES[v.id] || [];
+  const route = allSpares.find(r => r.id === selectedSpareRoute);
+  if (!route) return;
+
+  playRouteSharedSound();
+
+  // Update button
+  const btn = document.getElementById('cl-share-btn');
+  btn.innerHTML = '✅ Route Shared Successfully!';
+  btn.style.background = '#0ead7a';
+  setTimeout(() => { btn.innerHTML = '📤 Share Selected Route to Driver'; btn.style.background = '#f07000'; }, 3000);
+
+  // Add to alerts
+  addAlert('info', `📤 Spare route "${route.name}" shared to ${v.driver} via SMS & in-app · ${route.eta} · ${route.dist}`);
+  addAlert('warning', `📡 ${v.id} still offline — route shared as fallback. Monitoring signal restoration...`);
+
+  closeConnPopup();
+}
+
+function simulateCall(name, phone) {
+  addAlert('info', `📞 Calling ${name} at ${phone}...`);
+  closeConnPopup();
+}
+
+function simulateSMS(name) {
+  const v = connLostVehicleIdx !== null ? VEHICLES[connLostVehicleIdx] : null;
+  const route = v && selectedSpareRoute ? (SPARE_ROUTES[v.id]||[]).find(r=>r.id===selectedSpareRoute) : null;
+  const msg = route
+    ? `📤 SMS sent to ${name}: "Connection lost. Spare route: ${route.name} (${route.eta}) — ${route.turn}"`
+    : `📤 SMS sent to ${name}: "Connection lost. Please confirm your position."`;
+  addAlert('info', msg);
+  closeConnPopup();
+}
+
+function restoreConnection(vehicleIdx) {
+  const v = VEHICLES[vehicleIdx];
+  connState[v.id] = false; // was lost
+  clearInterval(connElapsedTimer);
+  connState[v.id] = true;
+  // Restore marker
+  const el = makeVehicleEl(v, selV === vehicleIdx);
+  const icon = L.divIcon({html:el, className:'', iconSize:[44,44], iconAnchor:[22,22]});
+  if (mapMarkers[v.id]) mapMarkers[v.id].setIcon(icon);
+  addAlert('info', `✅ CONNECTION RESTORED — ${v.id} (${v.driver}) · Signal back online · Tracking resumed`);
+  renderVList();
+}
+
+function closeConnPopup() {
+  clearInterval(connElapsedTimer);
+  const overlay = document.getElementById('conn-overlay');
+  const popup   = document.getElementById('conn-popup');
+  overlay.classList.add('hide');
+  popup.classList.add('hide');
+  setTimeout(() => {
+    overlay.classList.remove('show','hide');
+    popup.classList.remove('show','hide');
+  }, 300);
+}
+
+function handleConnOverlayClick(e) {
+  if (e.target === document.getElementById('conn-overlay')) closeConnPopup();
+}
 
 // ── DISPATCH NOTIFICATION SYSTEM ─────────────────────────────────────
 let dispatchCountdownTimer = null;
